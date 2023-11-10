@@ -28,7 +28,7 @@ this.appendStreams = function(streams) {
                 return t.kind === 'audio';
             }).length) {
             var audioSource = self.audioContext.createMediaStreamSource(stream);
-            // self.audioDestination = self.audioContext.createMediaStreamDestination();
+            if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
             audioSource.connect(self.audioDestination);
 
             newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {

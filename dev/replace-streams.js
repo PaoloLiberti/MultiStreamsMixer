@@ -7,8 +7,11 @@ this.resetVideoStreams = function(streams) {
 };
 
 function resetVideoStreams(streams) {
-    videos = [];
     streams = streams || arrayOfMediaStreams;
+   
+    videos = [];
+    arrayOfMediaStreams = [];
+
 
     // via: @adrian-ber
     streams.forEach(function(stream) {
@@ -18,6 +21,7 @@ function resetVideoStreams(streams) {
             return;
         }
 
+        arrayOfMediaStreams.push(stream); 
         var video = getVideo(stream);
         video.stream = stream;
         videos.push(video);

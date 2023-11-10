@@ -1,11 +1,4 @@
 function getMixedAudioStream() {
-    // via: @pehrsons
-    if (!Storage.AudioContextConstructor) {
-        Storage.AudioContextConstructor = new Storage.AudioContext();
-    }
-
-    self.audioContext = Storage.AudioContextConstructor;
-
     self.audioSources = [];
 
     if (self.useGainNode === true) {
@@ -33,7 +26,7 @@ function getMixedAudioStream() {
         self.audioSources.push(audioSource);
     });
 
-    self.audioDestination = self.audioContext.createMediaStreamDestination();
+    if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
     self.audioSources.forEach(function(audioSource) {
         audioSource.connect(self.audioDestination);
     });

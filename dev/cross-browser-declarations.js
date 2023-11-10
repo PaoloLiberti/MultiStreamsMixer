@@ -60,6 +60,13 @@ if (typeof AudioContext !== 'undefined') {
     Storage.AudioContext = webkitAudioContext;
 }
 
+if (!Storage.AudioContextConstructor) {
+    Storage.AudioContextConstructor = new Storage.AudioContext();
+}
+
+self.audioContext = Storage.AudioContextConstructor;  
+console.log("self.audioContext", self.audioContext) 
+
 function setSrcObject(stream, element) {
     if ('srcObject' in element) {
         element.srcObject = stream;
