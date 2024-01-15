@@ -1,5 +1,5 @@
 function getMixedVideoStream() {
-    resetVideoStreams();
+    // resetVideoStreams();
 
     var capturedStream;
 

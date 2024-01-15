@@ -18,8 +18,8 @@ canvas.className = elementClass;
 this.disableLogs = false;
 this.frameInterval = 10;
 
-this.width = 360;
-this.height = 240;
+this.width = 1920;
+this.height = 1080;
 
 // use gain node to prevent echo
 this.useGainNode = true;

@@ -3,7 +3,8 @@ function drawVideosToCanvas() {
         return;
     }
 
-    var videosLength = videos.length;
+    canvas.width = self.width || 360;
+    canvas.height = self.height || 240;     
 
     var fullcanvas = false;
     var remaining = [];
@@ -20,102 +21,72 @@ function drawVideosToCanvas() {
         }
     });
 
-    if (fullcanvas) {
-        canvas.width = fullcanvas.stream.width;
-        canvas.height = fullcanvas.stream.height;
-    } else if (remaining.length) {
-        canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
+    var videosLength = remaining.length;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
-        var height = 1;
-        if (videosLength === 3 || videosLength === 4) {
-            height = 2;
+    const videosPerRow = (videosLength <= Math.sqrt(videosLength)) ? videosLength : Math.ceil(Math.sqrt(videosLength));
+    const videosPerColumn = Math.ceil(videosLength / videosPerRow);
+
+    // console.log("videosPerRow: " + videosPerRow)
+    // console.log("videosPerColumn: " + videosPerColumn)
+    
+    const cols = Math.min(videosPerRow, videosLength);
+    const rows = videosPerColumn; 
+
+    // console.log("cols: " + cols)
+    // console.log("rows: " + rows)    
+
+    const videoWidth = canvasWidth / cols;
+    const videoHeight = canvasHeight / rows;
+
+    // console.log("videoWidth: " + videoWidth)
+    // console.log("videoHeight: " + videoHeight)          
+
+    var videoIndex = 0;
+    for (var row = 0; row < rows && videoIndex < videosLength; row++) {
+        for (var col = 0; col < cols && videoIndex < videosLength; col++) {
+            const video = remaining[videoIndex];
+            const x = col * videoWidth;
+            const y = row * videoHeight;
+            drawVideo(video, x, y, videoWidth, videoHeight);
+            drawTextOnVideo(video, video.stream.nickname, videoIndex, videosPerRow, videosPerColumn) 
+            videoIndex++
         }
-        if (videosLength === 5 || videosLength === 6) {
-            height = 3;
-        }
-        if (videosLength === 7 || videosLength === 8) {
-            height = 4;
-        }
-        if (videosLength === 9 || videosLength === 10) {
-            height = 5;
-        }
-        canvas.height = remaining[0].height * height;
-    } else {
-        canvas.width = self.width || 360;
-        canvas.height = self.height || 240;
     }
-
-    if (fullcanvas && fullcanvas instanceof HTMLVideoElement) {
-        drawImage(fullcanvas);
-    }
-
-    remaining.forEach(function(video, idx) {
-        drawImage(video, idx);
-    });
-
     setTimeout(drawVideosToCanvas, self.frameInterval);
 }
 
-function drawImage(video, idx) {
-    if (isStopDrawingFrames) {
-        return;
-    }
+function drawVideo(video, x, y, width, height) {
+    const ratio = Math.min(width / video.width, height / video.height);
+    const displayWidth = video.width * ratio;
+    const displayHeight = video.height * ratio;
 
-    var x = 0;
-    var y = 0;
-    var width = video.width;
-    var height = video.height;
-
-    if (idx === 1) {
-        x = video.width;
-    }
-
-    if (idx === 2) {
-        y = video.height;
-    }
-
-    if (idx === 3) {
-        x = video.width;
-        y = video.height;
-    }
-
-    if (idx === 4) {
-        y = video.height * 2;
-    }
-
-    if (idx === 5) {
-        x = video.width;
-        y = video.height * 2;
-    }
-
-    if (idx === 6) {
-        y = video.height * 3;
-    }
-
-    if (idx === 7) {
-        x = video.width;
-        y = video.height * 3;
-    }
-
-    if (typeof video.stream.left !== 'undefined') {
-        x = video.stream.left;
-    }
-
-    if (typeof video.stream.top !== 'undefined') {
-        y = video.stream.top;
-    }
-
-    if (typeof video.stream.width !== 'undefined') {
-        width = video.stream.width;
-    }
-
-    if (typeof video.stream.height !== 'undefined') {
-        height = video.stream.height;
-    }
-
-    context.drawImage(video, x, y, width, height);
+    context.drawImage(video, x, y, displayWidth, displayHeight);
 
     if (typeof video.stream.onRender === 'function') {
-        video.stream.onRender(context, x, y, width, height, idx);
+        video.stream.onRender(context, x, y, displayWidth, displayHeight);
     }
+}
+
+function drawTextOnVideo(video, textToDisplay, idx, videosPerRow, videosPerColumn){
+    video.stream.onRender = function(context, x, y, width, height, idx) {
+        context.font = '50px Roboto';
+        const measuredTextWidth = context.measureText(textToDisplay).width;
+        const measuredTextHeight = parseInt(context.font, 10);
+    
+        // Posiziona il testo nell'angolo in basso a sinistra
+        const textX = x + 10; // Aggiunto un margine di 10 pixel dal bordo sinistro
+        const textY = y + height - 10; // Aggiunto un margine di 10 pixel dal bordo inferiore
+    
+        // Disegna il rettangolo nero come sfondo per il testo
+        context.strokeStyle = 'rgb(255, 255, 255)'; // Bianco per la cornice
+        context.fillStyle = 'rgba(0, 0, 0, .5)'; // Nero per il riempimento
+        context.fillRect(textX, textY - measuredTextHeight, measuredTextWidth + 20, measuredTextHeight + 10);
+    
+        // Disegna il testo bianco
+        context.fillStyle = 'rgb(255, 255, 255)'; // Bianco per il testo
+        context.fillText(textToDisplay, textX + 10, textY);
+    };
+    
 }
