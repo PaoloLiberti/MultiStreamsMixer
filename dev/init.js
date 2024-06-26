@@ -1,8 +1,17 @@
 // requires: chrome://flags/#enable-experimental-web-platform-features
+this.disableLogs = false;
+this.frameInterval = 33;
+
+this.width = 1920;
+this.height = 1080;
+
+// use gain node to prevent echo
+this.useGainNode = true;
 
 elementClass = elementClass || 'multi-streams-mixer';
 
 var videos = [];
+var audios = [];
 var isStopDrawingFrames = false;
 
 var canvas = document.createElement('canvas');
@@ -14,14 +23,5 @@ canvas.style.top = '-1000em';
 canvas.style.left = '-1000em';
 canvas.className = elementClass;
 (document.body || document.documentElement).appendChild(canvas);
-
-this.disableLogs = false;
-this.frameInterval = 10;
-
-this.width = 1920;
-this.height = 1080;
-
-// use gain node to prevent echo
-this.useGainNode = true;
 
 var self = this;
