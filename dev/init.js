@@ -22,6 +22,10 @@ canvas.style.zIndex = -1;
 canvas.style.top = '-1000em';
 canvas.style.left = '-1000em';
 canvas.className = elementClass;
+
+canvas.width = this.width;
+canvas.height = this.height;
+
 (document.body || document.documentElement).appendChild(canvas);
 
 var self = this;
