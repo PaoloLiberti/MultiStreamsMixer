@@ -38,6 +38,7 @@ module.exports = function(grunt) {
                     'dev/init.js',
                     'dev/cross-browser-declarations.js',
                     'dev/start-drawing-frames.js',
+                    'dev/draw-background-on-canvas.js',                    
                     'dev/draw-videos-on-canvas.js',
                     'dev/get-mixed-stream.js',
                     'dev/get-mixed-video-stream.js',

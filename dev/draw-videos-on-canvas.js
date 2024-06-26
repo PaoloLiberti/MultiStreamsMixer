@@ -43,6 +43,8 @@ function drawVideosToCanvas() {
     // console.log("videoWidth: " + videoWidth)
     // console.log("videoHeight: " + videoHeight)          
 
+    drawBackground();
+
     var videoIndex = 0;
     for (var row = 0; row < rows && videoIndex < videosLength; row++) {
         for (var col = 0; col < cols && videoIndex < videosLength; col++) {

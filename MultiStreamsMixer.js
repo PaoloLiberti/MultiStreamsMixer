@@ -1,4 +1,4 @@
-// Last time updated: 2024-01-15 11:30:04 AM UTC
+// Last time updated: 2024-06-26 11:15:11 AM UTC
 
 // ________________________
 // MultiStreamsMixer v1.2.3
@@ -109,22 +109,6 @@ var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 })(typeof global !== 'undefined' ? global : null);
 
 // requires: chrome://flags/#enable-experimental-web-platform-features
-
-elementClass = elementClass || 'multi-streams-mixer';
-
-var videos = [];
-var isStopDrawingFrames = false;
-
-var canvas = document.createElement('canvas');
-var context = canvas.getContext('2d');
-canvas.style.opacity = 0;
-canvas.style.position = 'absolute';
-canvas.style.zIndex = -1;
-canvas.style.top = '-1000em';
-canvas.style.left = '-1000em';
-canvas.className = elementClass;
-(document.body || document.documentElement).appendChild(canvas);
-
 this.disableLogs = false;
 this.frameInterval = 10;
 
@@ -133,6 +117,25 @@ this.height = 1080;
 
 // use gain node to prevent echo
 this.useGainNode = true;
+
+elementClass = elementClass || 'multi-streams-mixer';
+
+var videos = [];
+var isStopDrawingFrames = false;
+
+var canvas = document.createElement('canvas');
+var context = canvas.getContext('2d');
+// canvas.style.opacity = 0;
+// canvas.style.position = 'absolute';
+// canvas.style.zIndex = -1;
+canvas.style.top = '-1000em';
+canvas.style.left = '-1000em';
+canvas.className = elementClass;
+
+canvas.width = this.width;
+canvas.height = this.height;
+
+(document.body || document.documentElement).appendChild(canvas);
 
 var self = this;
 
@@ -219,6 +222,19 @@ this.startDrawingFrames = function() {
     drawVideosToCanvas();
 };
 
+function drawBackground() {
+    console.log("🚀 ~ drawBackground ~ drawBackground")
+    
+    const gradient = context.createRadialGradient(970, 530, 290, 960, 540, 580);
+    gradient.addColorStop(0, "#eeaeca");
+    gradient.addColorStop(1, "#94bbe9");
+    
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+drawBackground();
+
 function drawVideosToCanvas() {
     if (isStopDrawingFrames) {
         return;
@@ -264,6 +280,8 @@ function drawVideosToCanvas() {
     // console.log("videoWidth: " + videoWidth)
     // console.log("videoHeight: " + videoHeight)          
 
+    drawBackground();
+    
     var videoIndex = 0;
     for (var row = 0; row < rows && videoIndex < videosLength; row++) {
         for (var col = 0; col < cols && videoIndex < videosLength; col++) {
@@ -271,10 +289,11 @@ function drawVideosToCanvas() {
             const x = col * videoWidth;
             const y = row * videoHeight;
             drawVideo(video, x, y, videoWidth, videoHeight);
-            drawTextOnVideo(video, video.stream.nickname, videoIndex, videosPerRow, videosPerColumn) 
+            // drawTextOnVideo(video, video.stream.nickname, videoIndex, videosPerRow, videosPerColumn) 
             videoIndex++
         }
     }
+
     setTimeout(drawVideosToCanvas, self.frameInterval);
 }
 
@@ -282,6 +301,11 @@ function drawVideo(video, x, y, width, height) {
     const ratio = Math.min(width / video.width, height / video.height);
     const displayWidth = video.width * ratio;
     const displayHeight = video.height * ratio;
+
+    console.log("x: " + x)
+    console.log("y: " + y)     
+    console.log("displayWidth: " + displayWidth)
+    console.log("displayHeight: " + displayHeight)       
 
     context.drawImage(video, x, y, displayWidth, displayHeight);
 
@@ -339,7 +363,7 @@ function getMixedStream() {
 }
 
 function getMixedVideoStream() {
-    // resetVideoStreams();
+    resetVideoStreams();
 
     var capturedStream;
 

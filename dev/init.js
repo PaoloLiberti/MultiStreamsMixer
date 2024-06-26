@@ -1,4 +1,12 @@
 // requires: chrome://flags/#enable-experimental-web-platform-features
+this.disableLogs = false;
+this.frameInterval = 10;
+
+this.width = 1920;
+this.height = 1080;
+
+// use gain node to prevent echo
+this.useGainNode = true;
 
 elementClass = elementClass || 'multi-streams-mixer';
 
@@ -13,15 +21,10 @@ canvas.style.zIndex = -1;
 canvas.style.top = '-1000em';
 canvas.style.left = '-1000em';
 canvas.className = elementClass;
+
+canvas.width = this.width;
+canvas.height = this.height;
+
 (document.body || document.documentElement).appendChild(canvas);
-
-this.disableLogs = false;
-this.frameInterval = 10;
-
-this.width = 1920;
-this.height = 1080;
-
-// use gain node to prevent echo
-this.useGainNode = true;
 
 var self = this;
