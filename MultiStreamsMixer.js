@@ -1,4 +1,4 @@
-// Last time updated: 2024-01-15 11:30:04 AM UTC
+// Last time updated: 2024-06-26 6:12:33 PM UTC
 
 // ________________________
 // MultiStreamsMixer v1.2.3
@@ -109,10 +109,19 @@ var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 })(typeof global !== 'undefined' ? global : null);
 
 // requires: chrome://flags/#enable-experimental-web-platform-features
+this.disableLogs = false;
+this.frameInterval = 33;
+
+this.width = 1920;
+this.height = 1080;
+
+// use gain node to prevent echo
+this.useGainNode = true;
 
 elementClass = elementClass || 'multi-streams-mixer';
 
 var videos = [];
+var audios = [];
 var isStopDrawingFrames = false;
 
 var canvas = document.createElement('canvas');
@@ -124,15 +133,6 @@ canvas.style.top = '-1000em';
 canvas.style.left = '-1000em';
 canvas.className = elementClass;
 (document.body || document.documentElement).appendChild(canvas);
-
-this.disableLogs = false;
-this.frameInterval = 10;
-
-this.width = 1920;
-this.height = 1080;
-
-// use gain node to prevent echo
-this.useGainNode = true;
 
 var self = this;
 
@@ -339,7 +339,7 @@ function getMixedStream() {
 }
 
 function getMixedVideoStream() {
-    // resetVideoStreams();
+    resetVideoStreams();
 
     var capturedStream;
 
@@ -367,35 +367,38 @@ function getMixedVideoStream() {
 function getMixedAudioStream() {
     self.audioSources = [];
 
-    if (self.useGainNode === true) {
-        self.gainNode = self.audioContext.createGain();
-        self.gainNode.connect(self.audioContext.destination);
-        self.gainNode.gain.value = 0; // don't hear self
+    // if (self.useGainNode === true) {
+    //     self.gainNode = self.audioContext.createGain();
+    //     self.gainNode.connect(self.audioContext.destination);
+    //     self.gainNode.gain.value = 0; // don't hear self
+    // }
+
+    // var audioTracksLength = 0;
+    // arrayOfMediaStreams.forEach(function(stream) {
+    //     if (!stream.getTracks().filter(function(t) {
+    //             return t.kind === 'audio';
+    //         }).length) {
+    //         return;
+    //     }
+
+    //     audioTracksLength++;
+
+    //     var audioSource = self.audioContext.createMediaStreamSource(stream);
+
+    //     if (self.useGainNode === true) {
+    //         audioSource.connect(self.gainNode);
+    //     }
+
+    //     self.audioSources.push(audioSource);
+    // });
+
+    if(!self.audioDestination) {
+        self.audioDestination = self.audioContext.createMediaStreamDestination();
+        console.log("🚀 ~ getMixedAudioStream CREATE NEW ~ self.audioDestination:", self.audioDestination)
     }
-
-    var audioTracksLength = 0;
-    arrayOfMediaStreams.forEach(function(stream) {
-        if (!stream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            }).length) {
-            return;
-        }
-
-        audioTracksLength++;
-
-        var audioSource = self.audioContext.createMediaStreamSource(stream);
-
-        if (self.useGainNode === true) {
-            audioSource.connect(self.gainNode);
-        }
-
-        self.audioSources.push(audioSource);
-    });
-
-    if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
-    self.audioSources.forEach(function(audioSource) {
-        audioSource.connect(self.audioDestination);
-    });
+    // self.audioSources.forEach(function(audioSource) {
+    //     audioSource.connect(self.audioDestination);
+    // });
     return self.audioDestination.stream;
 }
 
@@ -438,21 +441,44 @@ this.appendStreams = function(streams) {
             video.stream = stream;
             videos.push(video);
 
-            newStream.addTrack(stream.getTracks().filter(function(t) {
-                return t.kind === 'video';
-            })[0]);
+            // newStream.addTrack(stream.getTracks().filter(function(t) {
+            //     return t.kind === 'video';
+            // })[0]);
         }
 
         if (stream.getTracks().filter(function(t) {
                 return t.kind === 'audio';
             }).length) {
-            var audioSource = self.audioContext.createMediaStreamSource(stream);
-            if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
-            audioSource.connect(self.audioDestination);
+                
+            var gainNode = self.audioContext.createGain();
+            gainNode.gain.value = 1;
 
-            newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            })[0]);
+            var audioSource = self.audioContext.createMediaStreamSource(stream);
+
+            try {
+                var audioSourceConnect = audioSource.connect(gainNode);  
+                console.warn("audioSourceConnect: ", audioSourceConnect);
+            } catch (error) {
+                console.error(error)
+            }
+
+            console.log("🚀 ~ streams.forEach ~ audioSource:", audioSource)
+            if(!self.audioDestination) {
+                self.audioDestination = self.audioContext.createMediaStreamDestination();
+                console.log("🚀 ~ streams.forEach CREATE NEW ~ self.audioDestination:", self.audioDestination)
+            }
+            
+            try {
+                var gainAudioDestination = gainNode.connect(self.audioDestination);   
+                console.warn("gainAudioDestination: ", gainAudioDestination)
+            } catch (error) {
+                console.error(error)
+            }
+            audios.push({"gainNode": gainNode, "audioSource": audioSource});
+
+            // newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
+            //     return t.kind === 'audio';
+            // })[0]);
         }
     });
 };
@@ -492,34 +518,85 @@ this.releaseStreams = function() {
     }
 };
 
-this.resetVideoStreams = function(streams) {
+this.resetVideoStreams = function(streams, type) {
     if (streams && !(streams instanceof Array)) {
         streams = [streams];
     }
 
-    resetVideoStreams(streams);
+    resetVideoStreams(streams, type);
 };
 
-function resetVideoStreams(streams) {
+function resetVideoStreams(streams, type) {
     streams = streams || arrayOfMediaStreams;
    
     videos = [];
     arrayOfMediaStreams = [];
 
+    var activeAudios = []
 
-    // via: @adrian-ber
     streams.forEach(function(stream) {
-        if (!stream.getTracks().filter(function(t) {
+        arrayOfMediaStreams.push(stream); 
+
+        if (stream.getTracks().filter(function(t) {
                 return t.kind === 'video';
             }).length) {
-            return;
+                console.log("🚀 ~ streams video forEach ~ t:", stream);
+                var video = getVideo(stream);
+                video.stream = stream;
+                videos.push(video);
         }
 
-        arrayOfMediaStreams.push(stream); 
-        var video = getVideo(stream);
-        video.stream = stream;
-        videos.push(video);
+        if (stream.getTracks().filter(function(t) {
+            return t.kind === 'audio';
+        }).length) {
+            try {
+                console.log("🚀 ~ streams audio forEach ~ t:", stream);
+                var activeAudio = audios.filter(function(a){
+                    console.log("🚀 ~ audios.filter ~ a:", a)
+                    return a["audioSource"].mediaStream === stream
+                })
+                if (activeAudio) activeAudios.push(activeAudio)                
+            } catch (error) {
+                console.error("ERROR FATALE: ", error)
+            }
+
+        }        
     });
+    var removedAudios = audios.filter(function(audio) {
+        return !activeAudios.some(function(audioStream) {
+            return audio["audioSource"].mediaStream === audioStream;
+        });
+    });
+    
+    if(type === 'audio'){
+        audios = activeAudios;
+        console.log("🚀 ~ [END ] resetVideoStreams ~ audios:", audios)
+        removedAudios.forEach(function(audio) {
+            console.log(typeof audio["gainNode"])
+            console.log("🚀 ~ audios.forEach ~ gainNode:", audio["gainNode"])
+            audio["gainNode"].gain.value = 0;
+            try {
+                audio["gainNode"].disconnect(self.audioDestination);   
+            } catch (error) {
+                console.error(error);
+            }
+        })
+    }
+
+    // console.log("🚀 ~ [END ] resetVideoStreams ~ audios:", audios)
+    // console.log("🚀 ~ [END ] resetVideoStreams ~ activeAudios:", activeAudios)
+    // console.log("🚀 ~ [END ] resetVideoStreams ~ removedAudios:", removedAudios)    
+    // removedAudios.forEach(function(mediaSourceAudioNode) {
+    //     mediaSourceAudioNode = mediaSourceAudioNode[0]
+    //     console.log("************************ removed audio");
+    //     console.log(mediaSourceAudioNode);
+    //     console.log(typeof mediaSourceAudioNode);
+    //     try {
+    //         mediaSourceAudioNode.disconnect();
+    //     } catch (error) {
+    //         console.error(error);
+    //     }
+    // });
 }
 
 // for debugging
