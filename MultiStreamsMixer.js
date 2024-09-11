@@ -1,4 +1,4 @@
-// Last time updated: 2024-06-26 11:15:11 AM UTC
+// Last time updated: 2024-09-11 1:59:17 PM UTC
 
 // ________________________
 // MultiStreamsMixer v1.2.3
@@ -110,7 +110,7 @@ var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 
 // requires: chrome://flags/#enable-experimental-web-platform-features
 this.disableLogs = false;
-this.frameInterval = 10;
+this.frameInterval = 33;
 
 this.width = 1920;
 this.height = 1080;
@@ -121,16 +121,21 @@ this.useGainNode = true;
 elementClass = elementClass || 'multi-streams-mixer';
 
 var videos = [];
+var audios = [];
 var isStopDrawingFrames = false;
 
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
-// canvas.style.opacity = 0;
-// canvas.style.position = 'absolute';
-// canvas.style.zIndex = -1;
+canvas.style.opacity = 0;
+canvas.style.position = 'absolute';
+canvas.style.zIndex = -1;
 canvas.style.top = '-1000em';
 canvas.style.left = '-1000em';
 canvas.className = elementClass;
+
+canvas.width = this.width;
+canvas.height = this.height;
+
 
 canvas.width = this.width;
 canvas.height = this.height;
@@ -206,7 +211,6 @@ if (!Storage.AudioContextConstructor) {
 }
 
 self.audioContext = Storage.AudioContextConstructor;  
-console.log("self.audioContext", self.audioContext) 
 
 function setSrcObject(stream, element) {
     if ('srcObject' in element) {
@@ -222,14 +226,8 @@ this.startDrawingFrames = function() {
     drawVideosToCanvas();
 };
 
-function drawBackground() {
-    console.log("🚀 ~ drawBackground ~ drawBackground")
-    
-    const gradient = context.createRadialGradient(970, 530, 290, 960, 540, 580);
-    gradient.addColorStop(0, "#eeaeca");
-    gradient.addColorStop(1, "#94bbe9");
-    
-    context.fillStyle = gradient;
+function drawBackground() {   
+    context.fillStyle = "#515151";
     context.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -264,24 +262,15 @@ function drawVideosToCanvas() {
 
     const videosPerRow = (videosLength <= Math.sqrt(videosLength)) ? videosLength : Math.ceil(Math.sqrt(videosLength));
     const videosPerColumn = Math.ceil(videosLength / videosPerRow);
-
-    // console.log("videosPerRow: " + videosPerRow)
-    // console.log("videosPerColumn: " + videosPerColumn)
-    
+   
     const cols = Math.min(videosPerRow, videosLength);
     const rows = videosPerColumn; 
-
-    // console.log("cols: " + cols)
-    // console.log("rows: " + rows)    
 
     const videoWidth = canvasWidth / cols;
     const videoHeight = canvasHeight / rows;
 
-    // console.log("videoWidth: " + videoWidth)
-    // console.log("videoHeight: " + videoHeight)          
-
     drawBackground();
-    
+
     var videoIndex = 0;
     for (var row = 0; row < rows && videoIndex < videosLength; row++) {
         for (var col = 0; col < cols && videoIndex < videosLength; col++) {
@@ -289,28 +278,40 @@ function drawVideosToCanvas() {
             const x = col * videoWidth;
             const y = row * videoHeight;
             drawVideo(video, x, y, videoWidth, videoHeight);
-            // drawTextOnVideo(video, video.stream.nickname, videoIndex, videosPerRow, videosPerColumn) 
+            drawTextOnVideo(video, video.stream.nickname, videoIndex, videosPerRow, videosPerColumn) 
             videoIndex++
         }
     }
-
     setTimeout(drawVideosToCanvas, self.frameInterval);
 }
 
 function drawVideo(video, x, y, width, height) {
-    const ratio = Math.min(width / video.width, height / video.height);
-    const displayWidth = video.width * ratio;
-    const displayHeight = video.height * ratio;
+    const videoAspectRatio = video.videoWidth / video.videoHeight;
+    const containerAspectRatio = width / height;
 
-    console.log("x: " + x)
-    console.log("y: " + y)     
-    console.log("displayWidth: " + displayWidth)
-    console.log("displayHeight: " + displayHeight)       
+    var displayHeight, displayWidth;
 
-    context.drawImage(video, x, y, displayWidth, displayHeight);
+    if (videoAspectRatio < containerAspectRatio) {
+        displayHeight = height;
+        // Normalizzo larghezza rispetto all'altezza calcolata e all'aspect-ratio nativ del videos
+        displayWidth = height * videoAspectRatio;
+    } else {
+        if (displayHeight > height) {
+            displayHeight = height;
+            displayWidth = height * videoAspectRatio;
+        }else{
+            displayWidth = width;
+            displayHeight = width / videoAspectRatio;
+        }        
+    }    
+
+    const offsetX = x + (width - displayWidth) / 2;
+    const offsetY = y + (height - displayHeight) / 2;
+
+    context.drawImage(video, offsetX, offsetY, displayWidth, displayHeight);
 
     if (typeof video.stream.onRender === 'function') {
-        video.stream.onRender(context, x, y, displayWidth, displayHeight);
+        video.stream.onRender(context, offsetX, offsetY, displayWidth, displayHeight);
     }
 }
 
@@ -363,7 +364,7 @@ function getMixedStream() {
 }
 
 function getMixedVideoStream() {
-    resetVideoStreams();
+    //resetVideoStreams();
 
     var capturedStream;
 
@@ -391,35 +392,37 @@ function getMixedVideoStream() {
 function getMixedAudioStream() {
     self.audioSources = [];
 
-    if (self.useGainNode === true) {
-        self.gainNode = self.audioContext.createGain();
-        self.gainNode.connect(self.audioContext.destination);
-        self.gainNode.gain.value = 0; // don't hear self
+    // if (self.useGainNode === true) {
+    //     self.gainNode = self.audioContext.createGain();
+    //     self.gainNode.connect(self.audioContext.destination);
+    //     self.gainNode.gain.value = 0; // don't hear self
+    // }
+
+    // var audioTracksLength = 0;
+    // arrayOfMediaStreams.forEach(function(stream) {
+    //     if (!stream.getTracks().filter(function(t) {
+    //             return t.kind === 'audio';
+    //         }).length) {
+    //         return;
+    //     }
+
+    //     audioTracksLength++;
+
+    //     var audioSource = self.audioContext.createMediaStreamSource(stream);
+
+    //     if (self.useGainNode === true) {
+    //         audioSource.connect(self.gainNode);
+    //     }
+
+    //     self.audioSources.push(audioSource);
+    // });
+
+    if(!self.audioDestination) {
+        self.audioDestination = self.audioContext.createMediaStreamDestination();
     }
-
-    var audioTracksLength = 0;
-    arrayOfMediaStreams.forEach(function(stream) {
-        if (!stream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            }).length) {
-            return;
-        }
-
-        audioTracksLength++;
-
-        var audioSource = self.audioContext.createMediaStreamSource(stream);
-
-        if (self.useGainNode === true) {
-            audioSource.connect(self.gainNode);
-        }
-
-        self.audioSources.push(audioSource);
-    });
-
-    if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
-    self.audioSources.forEach(function(audioSource) {
-        audioSource.connect(self.audioDestination);
-    });
+    // self.audioSources.forEach(function(audioSource) {
+    //     audioSource.connect(self.audioDestination);
+    // });
     return self.audioDestination.stream;
 }
 
@@ -462,21 +465,42 @@ this.appendStreams = function(streams) {
             video.stream = stream;
             videos.push(video);
 
-            newStream.addTrack(stream.getTracks().filter(function(t) {
-                return t.kind === 'video';
-            })[0]);
+            // newStream.addTrack(stream.getTracks().filter(function(t) {
+            //     return t.kind === 'video';
+            // })[0]);
         }
 
         if (stream.getTracks().filter(function(t) {
                 return t.kind === 'audio';
             }).length) {
-            var audioSource = self.audioContext.createMediaStreamSource(stream);
-            if(!self.audioDestination) self.audioDestination = self.audioContext.createMediaStreamDestination();
-            audioSource.connect(self.audioDestination);
+                
+            var gainNode = self.audioContext.createGain();
+            gainNode.gain.value = 1;
 
-            newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            })[0]);
+            var audioSource = self.audioContext.createMediaStreamSource(stream);
+
+            try {
+                var audioSourceConnect = audioSource.connect(gainNode);  
+                console.warn("audioSourceConnect: ", audioSourceConnect);
+            } catch (error) {
+                console.error(error)
+            }
+
+            if(!self.audioDestination) {
+                self.audioDestination = self.audioContext.createMediaStreamDestination();
+            }
+            
+            try {
+                var gainAudioDestination = gainNode.connect(self.audioDestination);   
+                console.warn("gainAudioDestination: ", gainAudioDestination)
+            } catch (error) {
+                console.error(error)
+            }
+            audios.push({"gainNode": gainNode, "audioSource": audioSource});
+
+            // newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
+            //     return t.kind === 'audio';
+            // })[0]);
         }
     });
 };
@@ -516,34 +540,80 @@ this.releaseStreams = function() {
     }
 };
 
-this.resetVideoStreams = function(streams) {
+this.resetVideoStreams = function(streams, type) {
     if (streams && !(streams instanceof Array)) {
         streams = [streams];
     }
 
-    resetVideoStreams(streams);
+    resetVideoStreams(streams, type);
 };
 
-function resetVideoStreams(streams) {
+function resetVideoStreams(streams, type) {
     streams = streams || arrayOfMediaStreams;
    
-    videos = [];
     arrayOfMediaStreams = [];
 
+    var activeAudios = []
+    var activeVideos = []
 
-    // via: @adrian-ber
     streams.forEach(function(stream) {
-        if (!stream.getTracks().filter(function(t) {
-                return t.kind === 'video';
-            }).length) {
-            return;
+        arrayOfMediaStreams.push(stream); 
+
+        if (stream.getTracks().filter(function(t) {
+            return t.kind === 'video';
+        }).length && type === 'video') {
+                var video = getVideo(stream);
+                video.stream = stream;
+                activeVideos.push(video);
         }
 
-        arrayOfMediaStreams.push(stream); 
-        var video = getVideo(stream);
-        video.stream = stream;
-        videos.push(video);
+        else if (stream.getTracks().filter(function(t) {
+            return t.kind === 'audio';
+        }).length && type === 'audio') {
+            try {
+                var activeAudio = audios.filter(function(a){
+                    try {
+                        return a["audioSource"].mediaStream === stream   
+                    } catch (error) {
+                        console.error(error)
+                        return;
+                    }
+                })
+                if (activeAudio) activeAudios.push(activeAudio[0])                
+            } catch (error) {
+                console.error(error)
+            }
+
+        }        
     });
+
+    if(type === 'video'){
+        videos = activeVideos;
+    }
+    
+    if(type === 'audio'){
+        try {            
+            var removedAudios = audios.filter(function(audio) {
+                return !activeAudios.some(function(ac) {
+                    return audio["audioSource"].mediaStream === ac["audioSource"].mediaStream;
+                });
+            });
+    
+            audios = activeAudios;
+    
+        } catch (error) {
+        }
+
+
+        removedAudios.forEach(function(audio) {
+            audio["gainNode"].gain.value = 0;
+            try {
+                audio["gainNode"].disconnect(self.audioDestination);   
+            } catch (error) {
+                console.error(error);
+            }
+        })
+    }
 }
 
 // for debugging

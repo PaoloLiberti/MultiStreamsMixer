@@ -51,14 +51,32 @@ function drawVideosToCanvas() {
 }
 
 function drawVideo(video, x, y, width, height) {
-    const ratio = Math.min(width / video.width, height / video.height);
-    const displayWidth = video.width * ratio;
-    const displayHeight = video.height * ratio;
+    const videoAspectRatio = video.videoWidth / video.videoHeight;
+    const containerAspectRatio = width / height;
 
-    context.drawImage(video, x, y, displayWidth, displayHeight);
+    var displayHeight, displayWidth;
+
+    if (videoAspectRatio < containerAspectRatio) {
+        displayHeight = height;
+        // Normalizzo larghezza rispetto all'altezza calcolata e all'aspect-ratio nativ del videos
+        displayWidth = height * videoAspectRatio;
+    } else {
+        if (displayHeight > height) {
+            displayHeight = height;
+            displayWidth = height * videoAspectRatio;
+        }else{
+            displayWidth = width;
+            displayHeight = width / videoAspectRatio;
+        }        
+    }    
+
+    const offsetX = x + (width - displayWidth) / 2;
+    const offsetY = y + (height - displayHeight) / 2;
+
+    context.drawImage(video, offsetX, offsetY, displayWidth, displayHeight);
 
     if (typeof video.stream.onRender === 'function') {
-        video.stream.onRender(context, x, y, displayWidth, displayHeight);
+        video.stream.onRender(context, offsetX, offsetY, displayWidth, displayHeight);
     }
 }
 
