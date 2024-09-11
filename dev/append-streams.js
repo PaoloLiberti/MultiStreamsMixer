@@ -40,10 +40,8 @@ this.appendStreams = function(streams) {
                 console.error(error)
             }
 
-            console.log("🚀 ~ streams.forEach ~ audioSource:", audioSource)
             if(!self.audioDestination) {
                 self.audioDestination = self.audioContext.createMediaStreamDestination();
-                console.log("🚀 ~ streams.forEach CREATE NEW ~ self.audioDestination:", self.audioDestination)
             }
             
             try {

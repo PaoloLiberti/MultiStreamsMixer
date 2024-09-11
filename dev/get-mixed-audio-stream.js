@@ -28,7 +28,6 @@ function getMixedAudioStream() {
 
     if(!self.audioDestination) {
         self.audioDestination = self.audioContext.createMediaStreamDestination();
-        console.log("🚀 ~ getMixedAudioStream CREATE NEW ~ self.audioDestination:", self.audioDestination)
     }
     // self.audioSources.forEach(function(audioSource) {
     //     audioSource.connect(self.audioDestination);

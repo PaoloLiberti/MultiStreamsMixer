@@ -65,7 +65,6 @@ if (!Storage.AudioContextConstructor) {
 }
 
 self.audioContext = Storage.AudioContextConstructor;  
-console.log("self.audioContext", self.audioContext) 
 
 function setSrcObject(stream, element) {
     if ('srcObject' in element) {

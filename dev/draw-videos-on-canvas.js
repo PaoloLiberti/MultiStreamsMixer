@@ -27,21 +27,12 @@ function drawVideosToCanvas() {
 
     const videosPerRow = (videosLength <= Math.sqrt(videosLength)) ? videosLength : Math.ceil(Math.sqrt(videosLength));
     const videosPerColumn = Math.ceil(videosLength / videosPerRow);
-
-    // console.log("videosPerRow: " + videosPerRow)
-    // console.log("videosPerColumn: " + videosPerColumn)
-    
+   
     const cols = Math.min(videosPerRow, videosLength);
     const rows = videosPerColumn; 
 
-    // console.log("cols: " + cols)
-    // console.log("rows: " + rows)    
-
     const videoWidth = canvasWidth / cols;
     const videoHeight = canvasHeight / rows;
-
-    // console.log("videoWidth: " + videoWidth)
-    // console.log("videoHeight: " + videoHeight)          
 
     drawBackground();
 
